@@ -41,6 +41,7 @@ class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        startWorker(this)
         val permissionState =
             ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
 
