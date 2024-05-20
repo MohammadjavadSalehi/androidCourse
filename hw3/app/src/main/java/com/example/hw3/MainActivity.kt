@@ -26,12 +26,19 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
+import android.os.FileObserver
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Divider
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
+import java.io.File
 
 
 class MainActivity : ComponentActivity() {
@@ -58,6 +65,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             println("status $bluetoothStatus")
             displayBluetoothStatus(bluetoothStatus)
+            LogDisplayScreen(this)
         }
 
         val bluetoothStatusReceiver = object : BroadcastReceiver() {
@@ -100,6 +108,27 @@ class MainActivity : ComponentActivity() {
 
 }
 
+fun readFiles(context: Context): List<String> {
+    val logFile = File(context.filesDir, "logs.txt")
+    var logs = mutableListOf<String>()
+    if (logFile.exists()) {
+        logs = logFile.readLines().toMutableList();
+    }
+    return logs.reversed()
+}
+
+class LogFileWatcher(
+    private val context: Context, private val callback: () -> Unit
+) : FileObserver(context.filesDir.path + "logs.txt", CREATE or MODIFY) {
+
+    override fun onEvent(event: Int, path: String?) {
+        if (event == CREATE || event == MODIFY) {
+            callback()
+        }
+    }
+}
+
+
 @Composable
 fun displayBluetoothStatus(status: String) {
     val backgroundColor = if (status == "Connected") Color.Green else Color.Gray
@@ -121,15 +150,43 @@ fun displayBluetoothStatus(status: String) {
                 modifier = Modifier.padding(bottom = 16.dp)
             )
             Text(
-                text = "Bluetooth $status",
-                modifier = Modifier.padding(16.dp)
+                text = "Bluetooth $status", modifier = Modifier.padding(16.dp)
             )
+        }
+    }
+}
+
+@Composable
+fun LogDisplayScreen(context: Context) {
+    val logs = remember { mutableStateOf(readFiles(context)) }
+
+    val observer = remember {
+        LogFileWatcher(context) {
+            logs.value = readFiles(context)
+        }
+    }
+
+    DisposableEffect(context) {
+        observer.startWatching()
+        onDispose {
+            observer.stopWatching()
+        }
+    }
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(8.dp),
+    ) {
+        items(logs.value) { log ->
+            Text(text = log,modifier = Modifier.padding(top = 8.dp, bottom = 8.dp))
+            Divider(color = Color.White)
         }
     }
 }
 
 @Preview(showBackground = true)
 @Composable
-fun Main() {
+fun DefaultPreview() {
     displayBluetoothStatus("Disconnected")
 }
