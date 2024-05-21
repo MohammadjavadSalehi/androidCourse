@@ -24,7 +24,7 @@ class StatusCheckWorker(appContext: Context, workerParams: WorkerParameters) :
             Constraints.Builder().setRequiredNetworkType(NetworkType.NOT_REQUIRED).build()
         val requestChecking =
             OneTimeWorkRequestBuilder<StatusCheckWorker>().setConstraints(constraints)
-                .setInitialDelay(10, TimeUnit.SECONDS).build()
+                .setInitialDelay(120, TimeUnit.SECONDS).build()
         WorkManager.getInstance(applicationContext).enqueue(requestChecking)
     }
 
